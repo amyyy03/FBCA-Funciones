@@ -1,0 +1,142 @@
+{% extends 'Default studio template' %}
+{% block main %}
+
+{%- fetchxml propuestas -%}
+<fetch top="5000">
+  <entity name="cre0b_propuesta">
+    <attribute name="cre0b_id" />
+    <attribute name="cre0b_codigointerno" />
+  </entity>
+</fetch>
+{%- endfetchxml -%}
+
+<style>
+.bca-back-container{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  margin-bottom:14px;
+}
+
+/* Botón */
+.btn-back{
+  display:inline-block;
+  background:#0d6efd;
+  color:white !important;
+  padding:8px 18px;
+  border-radius:6px;
+  font-weight:600;
+  text-decoration:none !important;
+  border:1px solid #0d6efd;
+  transition:all .2s ease;
+}
+.btn-back:hover{
+  background:#0b5ed7;
+  border-color:#0a58ca;
+}
+
+/* Barra superior (para que quede alineado con el form) */
+.top-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  margin-bottom:14px;
+}
+</style>
+
+{% assign url_regreso = "/FormNota" %}
+
+<div class="container" style="max-width:1100px;margin:30px auto;">
+
+  <!-- BOTÓN REGRESAR (ya alineado al mismo ancho del formulario) -->
+  <div class="bca-back-container">
+    <a href="{{ url_regreso }}" class="btn-back">← Regresar</a>
+  </div>
+
+  {% entityform name: 'Propuesta formulario' %}
+
+</div>
+
+<script>
+  // ===== Lista de códigos existentes (normalizados) =====
+  window.existingCodigos = [
+    {% for p in propuestas.results.entities %}
+      "{{ p.cre0b_codigointerno | default: p.cre0b_id | escape }}"{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ].map(x => (x || "").trim().toLowerCase()).filter(Boolean);
+</script>
+
+<script>
+$(document).ready(function () {
+
+  function norm(v){ return (v || "").trim().toLowerCase(); }
+
+  // Intenta ubicar el botón de submit del Entity Form
+  // (en Power Pages cambia según template; cubrimos varios casos)
+  function getSubmitButtons(){
+    return $("input[type='submit'], button[type='submit'], input[id*='SubmitButton'], button[id*='SubmitButton']");
+  }
+
+  // Mensaje debajo del campo
+  function ensureMsg($field){
+    if ($("#dupMsg").length === 0) {
+      $("<div id='dupMsg' style='display:none;margin-top:6px;color:#dc3545;font-weight:700;font-size:13px;'></div>")
+        .insertAfter($field);
+    }
+    return $("#dupMsg");
+  }
+
+  function setError($field, show){
+    const $msg = ensureMsg($field);
+    const $btns = getSubmitButtons();
+
+    if(show){
+      $msg.text("Este ID/Código ya existe. Debe ser único.").show();
+      $field.css({"border":"2px solid #dc3545","background":"#fff5f5"});
+      $btns.prop("disabled", true).addClass("disabled");
+    } else {
+      $msg.hide();
+      $field.css({"border":"","background":""});
+      $btns.prop("disabled", false).removeClass("disabled");
+    }
+  }
+
+  // ====== Campos ======
+  // Campo visible: ID/Código (nombre lógico: cre0b_codigointerno)
+  const $codigo = $("#cre0b_codigointerno");
+
+  // (Opcional) campo ID (si quieres copiarle el código automáticamente)
+  const $id = $("#cre0b_id");
+
+  if($codigo.length === 0){
+    console.warn("No se encontró #cre0b_codigointerno. Revisa el id del input en el HTML.");
+    return;
+  }
+
+  function validate(){
+    const v = norm($codigo.val());
+
+    // Si está vacío no bloqueamos
+    if(!v){
+      setError($codigo, false);
+      return;
+    }
+
+    const exists = (window.existingCodigos || []).includes(v);
+    setError($codigo, exists);
+
+    // ===== OPCIONAL: copiar automáticamente al campo ID =====
+    // Si quieres que ID sea igual al código, descomenta:
+    // if($id.length){ $id.val($codigo.val()); }
+  }
+
+  // Validación en vivo
+  $codigo.on("input change blur", validate);
+
+  // Validación al cargar (por si trae valor)
+  validate();
+
+});
+</script>
+
+{% endblock %}

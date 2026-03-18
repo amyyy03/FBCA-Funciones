@@ -1,0 +1,84 @@
+{% assign evalsRaw = request.params.evals | default: '' | strip %}
+
+{% fetchxml relaciones %}
+<fetch>
+  <entity name="cre0b_relacioninforme">
+    <attribute name="cre0b_relacioninformeid" />
+    <attribute name="cre0b_idevaluaciones" />
+    <filter>
+      <condition attribute="cre0b_idevaluaciones" operator="not-null" />
+    </filter>
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+$(document).ready(function() {
+
+    var $campo = $("#cre0b_idevaluaciones");
+    $campo.prop("readonly", true);
+    $("#cre0b_idevaluaciones").closest("td").hide();
+
+    var $btnEnviar = $("#InsertButton, input[type='submit'][value='Enviar']").first();
+
+    if ($("#btnErrorMsg").length === 0) {
+        $("<span id='btnErrorMsg' style='margin-left:15px; color:#dc3545; font-weight:600; font-size:13px;'></span>")
+            .insertAfter($btnEnviar);
+    }
+
+    function limpiarIds(texto) {
+        if (!texto) return [];
+        return texto
+            .split(",")
+            .map(function(x) { return $.trim(x); })
+            .filter(function(x) { return x !== ""; });
+    }
+
+    var idsActualesRaw = "{{ evalsRaw | escape }}";
+    var idsActuales = limpiarIds(idsActualesRaw);
+
+    //console.log("IDs actuales del formulario:", idsActualesRaw);
+    //console.log("IDs actuales separados:", idsActuales);
+
+    var bloquearEnvio = false;
+    var coincidencias = [];
+
+    {% for rel in relaciones.results.entities %}
+        (function() {
+            var registroId = "{{ rel.cre0b_relacioninformeid }}";
+            var idsGuardadosRaw = "{{ rel.cre0b_idevaluaciones | default: '' | escape }}";
+            var idsGuardados = limpiarIds(idsGuardadosRaw);
+
+            //console.log("Registro relación:", registroId);
+            //console.log("IDs guardados en ese registro:", idsGuardadosRaw);
+            //console.log("IDs guardados separados:", idsGuardados);
+
+            idsActuales.forEach(function(idActual) {
+                if (idsGuardados.indexOf(idActual) !== -1) {
+                    bloquearEnvio = true;
+                    coincidencias.push({
+                        idCoincidente: idActual,
+                        registroRelacion: registroId
+                    });
+                }
+            });
+        })();
+    {% endfor %}
+
+    if (bloquearEnvio) {
+        //console.log("Coincidencias encontradas:", coincidencias);
+
+        $btnEnviar.prop("disabled", true);
+
+        $("#UploadButton").hide();
+
+        $("#btnErrorMsg")
+            .text("Uno o varios ID ya fueron enviados anteriormente.")
+            .show();
+    } else {
+        //console.log("No se encontraron coincidencias.");
+        $btnEnviar.prop("disabled", false);
+        $("#UploadButton").show();
+        $("#btnErrorMsg").hide();
+    }
+
+});
