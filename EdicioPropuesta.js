@@ -233,10 +233,6 @@ $(document).ready(function() {
       $('.submit-btn.btn.btn-primary.form-action-container-left').show();
       $("input#btnGuardar").first().hide();
       $("#UploadButton").show();
-    } else if (estado === "277010003" && etapa === "277010000") {
-      $('.submit-btn.btn.btn-primary.form-action-container-left').show();
-      $("input#btnGuardar").first().hide();
-      $("#UploadButton").show();
     }
   }
 
@@ -250,7 +246,7 @@ $(document).ready(function() {
       var estado = $("#cre0b_estado").val();
       var etapa  = $("#cre0b_etapa").val();
 
-      // Si está subsanado y en etapa revision tecnica
+      // Si está subsanado y en etapa revision tecnica o evaluacion administrativa
       if ((estado === "277010002" && etapa === "277010002")|| (estado === "277010002" && etapa === "277010001")) {
       $("input#btnGuardar").last().hide();
           if (intervaloEstado !== null) {
@@ -281,12 +277,13 @@ $(document).ready(function() {
     var etapa  = $("#cre0b_etapa").val();
 
     var etapaNotaConceptual = "277010000"; // Nota Conceptual
+    var estadoGuardado    = "277010005"; // Guardado
     var estadoSubsanado     = "277010002"; // Subsanado
 
-    // ✅ Editable si:
-    // - Etapa = Nota Conceptual (cualquier estado) O
+    // Editable si:
+    // - Etapa = Nota Conceptual en estado guardado O
     // - Estado = Subsanado (cualquier etapa)
-    var permitirEdicion = (etapa === etapaNotaConceptual) || (estado === estadoSubsanado);
+    var permitirEdicion = (etapa === etapaNotaConceptual && estado === estadoGuardado) || (estado === estadoSubsanado);
 
     //Bloquear si NO cumple ninguna
     var bloquear = !permitirEdicion;
